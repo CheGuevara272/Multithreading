@@ -1,0 +1,5 @@
+small_ship_max_containers:50
+medium_ship_max_containers:200
+large_ship_max_containers:400
+ship_is_empty_chance:0.5
+ships_number:20
