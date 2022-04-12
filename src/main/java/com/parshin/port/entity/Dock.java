@@ -33,7 +33,8 @@ public class Dock {
                 try {
                     TimeUnit.MILLISECONDS.sleep(100);
                 } catch (InterruptedException e) {
-                    log.log(Level.ERROR, "Interrupted", e);
+                    log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);
+                    Thread.currentThread().interrupt();
                 }
             } else {
                 Thread.yield();
@@ -49,7 +50,8 @@ public class Dock {
                 try {
                     TimeUnit.MILLISECONDS.sleep(100);
                 } catch (InterruptedException e) {
-                    log.log(Level.ERROR, "Interrupted", e);
+                    log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);
+                    Thread.currentThread().interrupt();
                 }
             } else {
                 Thread.yield();

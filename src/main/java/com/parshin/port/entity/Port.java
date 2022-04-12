@@ -7,20 +7,20 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayDeque;
 import java.util.StringJoiner;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Port {
     private static final Logger log = LogManager.getLogger();
-    private static final AtomicReference<Port> instance = new AtomicReference<>();
+    private static final AtomicBoolean isInstanceCreated = new AtomicBoolean(false);
+    private static Port instance;
+    private static final ReentrantLock lock = new ReentrantLock();
 
     private double maxNumberOfContainers;
     private double numberOfDocks;
-    private double containerMaxLoadMultiplier;
-    private double containerMinLoadMultiplier;
     private AtomicInteger numberOfContainers;
     private ArrayDeque<Dock> dockPool;
     private AtomicInteger debit;
@@ -37,17 +37,18 @@ public class Port {
     }
 
     public static Port getInstance() {
-        while (true) {
-            Port port = instance.get();
-            if (port != null) {
-                return port;
-            }
-
-            port = new Port();
-            if (instance.compareAndSet(null, port)) {
-                return port;
+        if (!isInstanceCreated.get()) {
+            lock.lock();
+            try {
+                if (instance == null) {
+                    instance = new Port();
+                    isInstanceCreated.set(true);
+                }
+            } finally {
+                lock.unlock();
             }
         }
+        return instance;
     }
 
     public double getMaxNumberOfContainers() {
@@ -58,28 +59,8 @@ public class Port {
         this.maxNumberOfContainers = maxNumberOfContainers;
     }
 
-    public double getNumberOfDocks() {
-        return numberOfDocks;
-    }
-
     public void setNumberOfDocks(double numberOfDocks) {
         this.numberOfDocks = numberOfDocks;
-    }
-
-    public double getContainerMaxLoadMultiplier() {
-        return containerMaxLoadMultiplier;
-    }
-
-    public void setContainerMaxLoadMultiplier(double containerMaxLoadMultiplier) {
-        this.containerMaxLoadMultiplier = containerMaxLoadMultiplier;
-    }
-
-    public double getContainerMinLoadMultiplier() {
-        return containerMinLoadMultiplier;
-    }
-
-    public void setContainerMinLoadMultiplier(double containerMinLoadMultiplier) {
-        this.containerMinLoadMultiplier = containerMinLoadMultiplier;
     }
 
     public AtomicInteger getNumberOfContainers() {
@@ -120,44 +101,41 @@ public class Port {
             }
             dock = dockPool.pop();
             dockGetCount.incrementAndGet();
-            log.log(Level.INFO, "", Thread.currentThread().getName(),
-                    dock.getDockId(), dockPool.size());
+            log.log(Level.INFO, "Thread {} get dock {},free docks - {}", Thread.currentThread().getName(), dock.getDockId(), dockPool.size());
             onReturnDock.signal();
             return dock;
         } catch (InterruptedException e) {
-            log.log(Level.ERROR, "", Thread.currentThread().getName(), e);
+            log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);
+            Thread.currentThread().interrupt();
         } finally {
             locker.unlock();
         }
         throw new CustomException("Dock was not given");
     }
 
-    public void pushDockPool(Dock dock) throws CustomException {
+    public void pushDockPool(Dock dock) {
         locker.lock();
-        try {
-            dockPool.push(dock);
-            dockReturnCount.incrementAndGet();
-            log.log(Level.INFO, "", Thread.currentThread().getName(), dockPool.size());
-            onGetDock.signal();
-        } finally {
-            locker.unlock();
-        }
+        dockPool.push(dock);
+        dockReturnCount.incrementAndGet();
+        log.log(Level.INFO, "Thread {} return dock, free docks - {}", Thread.currentThread().getName(), dockPool.size());
+        onGetDock.signal();
+        locker.unlock();
     }
 
     public AtomicInteger getDebit() {
         return debit;
     }
 
-    public void setDebit(AtomicInteger debit) {
-        this.debit = debit;
-    }
-
     public AtomicInteger getCredit() {
         return credit;
     }
 
-    public void setCredit(AtomicInteger credit) {
-        this.credit = credit;
+    public AtomicInteger getDockGetCount() {
+        return dockGetCount;
+    }
+
+    public AtomicInteger getDockReturnCount() {
+        return dockReturnCount;
     }
 
     public AtomicInteger getShipCounter() {
@@ -177,8 +155,6 @@ public class Port {
         return new StringJoiner(", ", Port.class.getSimpleName() + "[", "]")
                 .add("maxNumberOfContainers=" + maxNumberOfContainers)
                 .add("numberOfDocks=" + numberOfDocks)
-                .add("containerMaxLoadMultiplier=" + containerMaxLoadMultiplier)
-                .add("containerMinLoadMultiplier=" + containerMinLoadMultiplier)
                 .add("numberOfContainers=" + numberOfContainers)
                 .add("dockPool=" + dockPool)
                 .add("debit=" + debit)

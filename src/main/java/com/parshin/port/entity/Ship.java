@@ -6,18 +6,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.TimeUnit;
+
 public class Ship extends Thread {
     private static final Logger log = LogManager.getLogger();
-    private final String shipName;
-    private final int maxNumberOfContainers;
     private int actualNumberOfContainers;
+    private final int maxNumberOfContainers;
     private Dock dock;
-    private Port port;
-    private WaterArea waterArea;
+    private final Port port;
+    private final WaterArea waterArea;
 
-    public Ship(@NotNull String name, Port port, int maxNumberOfContainers, int actualNumberOfContainers) {
+    public Ship(@NotNull String name, int maxNumberOfContainers, int actualNumberOfContainers, Port port) {
         super("Ship - " + name);
-        this.shipName = name;
         this.port = port;
         this.maxNumberOfContainers = maxNumberOfContainers;
         this.actualNumberOfContainers = actualNumberOfContainers;
@@ -49,14 +49,22 @@ public class Ship extends Thread {
             dock = port.popDockPool();
         } catch (CustomException e) {
             log.log(Level.ERROR, "Can't get dock", e);
-            e.printStackTrace();
         } catch (InterruptedException e) {
-            log.log(Level.ERROR, "Process was interrupted {}", Thread.currentThread().getName(), e);
+            log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);
+            Thread.currentThread().interrupt();
         }
         dock.setShip(this);
 
         if (actualNumberOfContainers != 0) {
             dock.unLoadShip();
+            try {
+                int shipMaintenanceTime = 3;
+                TimeUnit.SECONDS.sleep(shipMaintenanceTime);
+            } catch (InterruptedException e) {
+                log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);
+                Thread.currentThread().interrupt();
+            }
+            dock.loadShip();
         } else {
             dock.loadShip();
         }
@@ -64,11 +72,9 @@ public class Ship extends Thread {
             dock.unLoadShip();
             port.pushDockPool(dock);
             waterArea.getOutOfTheWaterArea();
-        } catch (CustomException e) {
-            log.log(Level.ERROR, "Can't get dock", e);
-            e.printStackTrace();
         } catch (InterruptedException e) {
-            log.log(Level.ERROR, "Process was interrupted {}", Thread.currentThread().getName(), e);
+            log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);
+            Thread.currentThread().interrupt();
         }
         port.decrementShipCounter();
     }

@@ -11,9 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicReference;
 
-
 public class CustomReaderImpl implements CustomReader {
-
     private static final Logger log = LogManager.getLogger();
     private static final AtomicReference<CustomReaderImpl> instance = new AtomicReference<>();
 

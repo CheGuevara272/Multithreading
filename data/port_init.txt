@@ -1,0 +1,3 @@
+max_number_containers:4000
+number_of_docks:5
+init_number_of_containers:1000
