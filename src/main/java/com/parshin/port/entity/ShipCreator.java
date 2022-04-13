@@ -32,7 +32,7 @@ public class ShipCreator {
     private double smallShipMaxContainers;
     private double mediumShipMaxContainers;
     private double largeShipMaxContainers;
-    private final double[] shipTypes = {smallShipMaxContainers, mediumShipMaxContainers, largeShipMaxContainers};
+
     private double minimumShipLoad; // From 0.0 to 1.0
     private double shipIsEmptyProbability; // From 0.0 to 1.0
     private Double numberOfShips;
@@ -63,6 +63,7 @@ public class ShipCreator {
     }
 
     private List<Ship> fillShipList(Port port) {
+        double[] shipTypes = {smallShipMaxContainers, mediumShipMaxContainers, largeShipMaxContainers};
         Random random = new Random();
         Ship ship;
         shipList = new ArrayList<>();
@@ -70,8 +71,8 @@ public class ShipCreator {
         for (int i = 0; i < numberOfShips; i++) {
             boolean shipIsEmpty = random.nextFloat() < shipIsEmptyProbability;
             int type = random.nextInt(shipTypes.length);
-            int actualNumberOfContainers = shipIsEmpty ? random.nextInt((int) (shipTypes[type] * minimumShipLoad), (int) shipTypes[type]) : 0;
-            ship = new Ship("Ship number " + i, (int) shipTypes[type], actualNumberOfContainers, port);
+            int actualNumberOfContainers = shipIsEmpty ? 0 : random.nextInt((int) (shipTypes[type] * minimumShipLoad), (int) shipTypes[type]);
+            ship = new Ship("Ship " + (i + 1), (int) shipTypes[type], actualNumberOfContainers, port, minimumShipLoad);
             shipList.add(ship);
         }
         return shipList;

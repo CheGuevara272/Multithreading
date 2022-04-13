@@ -38,7 +38,7 @@ public class PortMain {
 
         ExecutorService executor;
         executor = Executors.newFixedThreadPool(10);
-        log.log(Level.INFO, "\n\n <<<<<<<<<< START >>>>>>>>>>\n");
+        log.log(Level.INFO, "\n\n -------------------- START --------------------\n");
 
         ships.forEach(executor::execute);
         executor.shutdown();
@@ -54,8 +54,8 @@ public class PortMain {
             Thread.yield();
         }
 
-        log.log(Level.INFO, "\n\n <<<<<<<<<< PortRunner finished work >>>>>>>>>>\n");
-        log.log(Level.INFO, "\n{} - docks were gotten, {} - docks were returned\n", port.getDockGetCount(), port.getDockReturnCount());
+        log.log(Level.INFO, "\n\n ---------- PortRunner finished work ----------\n");
+        log.log(Level.INFO, "\n{} - docks has been moored, {} - docks has been returned\n", port.getDockGetCount(), port.getDockReturnCount());
 
         log.log(Level.INFO, "\n\nAvailable containers in port value - {} \nContainers income value - {} \nContainers outcome value - {}",
                 port.getNumberOfContainers().intValue(), port.getDebit().intValue(), port.getCredit().intValue());

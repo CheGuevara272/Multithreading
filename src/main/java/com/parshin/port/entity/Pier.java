@@ -4,15 +4,16 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-public class Dock {
+public class Pier {
     private static final Logger log = LogManager.getLogger();
     private final int dockId;
     private final Port port;
     private Ship ship;
 
-    public Dock(int dockId, Port port) {
+    public Pier(int dockId, Port port) {
         this.port = port;
         this.dockId = dockId;
     }
@@ -31,7 +32,7 @@ public class Dock {
                 ship.decrementNumberOfContainers();
                 port.incrementNumberOfContainers();
                 try {
-                    TimeUnit.MILLISECONDS.sleep(100);
+                    TimeUnit.MILLISECONDS.sleep(50);
                 } catch (InterruptedException e) {
                     log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);
                     Thread.currentThread().interrupt();
@@ -43,12 +44,14 @@ public class Dock {
     }
 
     public void loadShip() {
-        while (ship.isFreeSpaceForContainers()) {
+        Random random = new Random();
+        int numberOfContainersToLeavePort = random.nextInt((int) (ship.getMaxNumberOfContainers() * ship.getMinimumShipLoadToLeavePort()), (int) ship.getMaxNumberOfContainers());
+        while (ship.isFreeSpaceForContainers() && ship.getActualNumberOfContainers() < numberOfContainersToLeavePort) {
             if (port.getNumberOfContainers().doubleValue() > 0) {
                 port.decrementNumberOfContainers();
                 ship.incrementNumberOfContainers();
                 try {
-                    TimeUnit.MILLISECONDS.sleep(100);
+                    TimeUnit.MILLISECONDS.sleep(50);
                 } catch (InterruptedException e) {
                     log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);
                     Thread.currentThread().interrupt();

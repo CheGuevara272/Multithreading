@@ -20,9 +20,9 @@ public class Port {
     private static final ReentrantLock lock = new ReentrantLock();
 
     private double maxNumberOfContainers;
-    private double numberOfDocks;
+    private double numberOfPiers;
     private AtomicInteger numberOfContainers;
-    private ArrayDeque<Dock> dockPool;
+    private ArrayDeque<Pier> pierPool;
     private AtomicInteger debit;
     private AtomicInteger credit;
     private AtomicInteger shipCounter;
@@ -59,8 +59,8 @@ public class Port {
         this.maxNumberOfContainers = maxNumberOfContainers;
     }
 
-    public void setNumberOfDocks(double numberOfDocks) {
-        this.numberOfDocks = numberOfDocks;
+    public void setNumberOfPiers(double numberOfPiers) {
+        this.numberOfPiers = numberOfPiers;
     }
 
     public AtomicInteger getNumberOfContainers() {
@@ -84,40 +84,40 @@ public class Port {
     public void initialise() {
         debit = new AtomicInteger(0);
         credit = new AtomicInteger(0);
-        dockPool = new ArrayDeque<>();
+        pierPool = new ArrayDeque<>();
         shipCounter = new AtomicInteger(0);
 
-        for (int i = 0; i < numberOfDocks; i++) {
-            dockPool.push(new Dock(i, this));
+        for (int i = 0; i < numberOfPiers; i++) {
+            pierPool.push(new Pier(i + 1, this));
         }
     }
 
-    public Dock popDockPool() throws CustomException {
+    public Pier popDockPool() throws CustomException {
         locker.lock();
-        Dock dock;
+        Pier pier;
         try {
-            while (dockPool.isEmpty()) {
+            while (pierPool.isEmpty()) {
                 onGetDock.await();
             }
-            dock = dockPool.pop();
+            pier = pierPool.pop();
             dockGetCount.incrementAndGet();
-            log.log(Level.INFO, "Thread {} get dock {},free docks - {}", Thread.currentThread().getName(), dock.getDockId(), dockPool.size());
+            log.log(Level.INFO, "{} moored to pier {}. {} docks are free", Thread.currentThread().getName(), pier.getDockId(), pierPool.size());
             onReturnDock.signal();
-            return dock;
+            return pier;
         } catch (InterruptedException e) {
-            log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);
+            log.log(Level.ERROR, "{} was interrupted", Thread.currentThread().getName(), e);
             Thread.currentThread().interrupt();
         } finally {
             locker.unlock();
         }
-        throw new CustomException("Dock was not given");
+        throw new CustomException("Pier was not given");
     }
 
-    public void pushDockPool(Dock dock) {
+    public void pushDockPool(Pier pier) {
         locker.lock();
-        dockPool.push(dock);
+        pierPool.push(pier);
         dockReturnCount.incrementAndGet();
-        log.log(Level.INFO, "Thread {} return dock, free docks - {}", Thread.currentThread().getName(), dockPool.size());
+        log.log(Level.INFO, "{} unmoored from pier. {} docks are free", Thread.currentThread().getName(), pierPool.size());
         onGetDock.signal();
         locker.unlock();
     }
@@ -154,9 +154,9 @@ public class Port {
     public String toString() {
         return new StringJoiner(", ", Port.class.getSimpleName() + "[", "]")
                 .add("maxNumberOfContainers=" + maxNumberOfContainers)
-                .add("numberOfDocks=" + numberOfDocks)
+                .add("numberOfDocks=" + numberOfPiers)
                 .add("numberOfContainers=" + numberOfContainers)
-                .add("dockPool=" + dockPool)
+                .add("pierPool=" + pierPool)
                 .add("debit=" + debit)
                 .add("credit=" + credit)
                 .toString();

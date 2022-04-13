@@ -6,22 +6,39 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class Ship extends Thread {
     private static final Logger log = LogManager.getLogger();
+    private final String shipName;
     private int actualNumberOfContainers;
     private final int maxNumberOfContainers;
-    private Dock dock;
+    private double minimumShipLoadToLeavePort;
+    private Pier pier;
     private final Port port;
     private final WaterArea waterArea;
 
-    public Ship(@NotNull String name, int maxNumberOfContainers, int actualNumberOfContainers, Port port) {
+    public Ship(@NotNull String name, int maxNumberOfContainers, int actualNumberOfContainers, Port port, double minimumShipLoadToLeavePort) {
         super("Ship - " + name);
+        this.shipName = name;
         this.port = port;
         this.maxNumberOfContainers = maxNumberOfContainers;
         this.actualNumberOfContainers = actualNumberOfContainers;
         this.waterArea = WaterArea.getInstance();
+        this.minimumShipLoadToLeavePort = minimumShipLoadToLeavePort;
+    }
+
+    public double getMinimumShipLoadToLeavePort() {
+        return minimumShipLoadToLeavePort;
+    }
+
+    public int getActualNumberOfContainers() {
+        return actualNumberOfContainers;
+    }
+
+    public int getMaxNumberOfContainers() {
+        return maxNumberOfContainers;
     }
 
     public boolean areThereContainers() {
@@ -43,20 +60,20 @@ public class Ship extends Thread {
     @Override
     public void run() {
         port.incrementShipCounter();
-
+        Thread.currentThread().setName(shipName);
         try {
             waterArea.enterTheWaterArea();
-            dock = port.popDockPool();
+            pier = port.popDockPool();
         } catch (CustomException e) {
-            log.log(Level.ERROR, "Can't get dock", e);
+            log.log(Level.ERROR, "Can't get pier", e);
         } catch (InterruptedException e) {
             log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);
             Thread.currentThread().interrupt();
         }
-        dock.setShip(this);
+        pier.setShip(this);
 
         if (actualNumberOfContainers != 0) {
-            dock.unLoadShip();
+            pier.unLoadShip();
             try {
                 int shipMaintenanceTime = 3;
                 TimeUnit.SECONDS.sleep(shipMaintenanceTime);
@@ -64,13 +81,12 @@ public class Ship extends Thread {
                 log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);
                 Thread.currentThread().interrupt();
             }
-            dock.loadShip();
+            pier.loadShip();
         } else {
-            dock.loadShip();
+            pier.loadShip();
         }
         try {
-            dock.unLoadShip();
-            port.pushDockPool(dock);
+            port.pushDockPool(pier);
             waterArea.getOutOfTheWaterArea();
         } catch (InterruptedException e) {
             log.log(Level.ERROR, "Thread {} was interrupted", Thread.currentThread().getName(), e);

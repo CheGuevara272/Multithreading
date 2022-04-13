@@ -31,13 +31,14 @@ public class WaterArea {
     }
 
     public void enterTheWaterArea() throws InterruptedException {
+        TimeUnit.MILLISECONDS.sleep(500);
         semaphore.acquire();
-        log.log(Level.INFO, "Ship {} entered the water area", Thread.currentThread().getName());
+        log.log(Level.INFO, "{} entered the water area", Thread.currentThread().getName());
     }
 
     public void getOutOfTheWaterArea() throws InterruptedException {
         TimeUnit.MILLISECONDS.sleep(500);
         semaphore.release();
-        log.log(Level.INFO, "Ship {} left the water area", Thread.currentThread().getName());
+        log.log(Level.INFO, "{} left the water area", Thread.currentThread().getName());
     }
 }
